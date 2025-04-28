@@ -48,7 +48,7 @@ jobs:
           run: npm install
     
         - name: Run Code Coverage
-          run: npm run code-coverage
+          run: npm run coverage
           continue-on-error: true
           
         - name: Upload Coverage Reports
