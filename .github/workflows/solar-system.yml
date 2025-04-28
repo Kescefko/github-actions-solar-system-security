@@ -6,10 +6,10 @@ on:
     branches:
       - main
       - 'feature/*'
-env:
-  MONGO_URI: 'mongodb+srv://supercluster.d83jj.mongodb.net/superData'
-  MONGO_USERNAME: 'superuser'
-  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}  # This will be referenced as a secret
+# env:
+  # MONGO_URI: 'mongodb+srv://supercluster.d83jj.mongodb.net/superData'
+  # MONGO_USERNAME: 'superuser'
+  # MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}  # This will be referenced as a secret
     
 jobs:
     unit-testing:
