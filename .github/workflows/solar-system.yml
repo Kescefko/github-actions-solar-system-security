@@ -9,7 +9,7 @@ on:
 env:
   MONGO_URI: 'mongodb+srv://supercluster.d83jj.mongodb.net/superData'
   MONGO_USERNAME: 'superuser'
-  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}  # This will be referenced as a secret
+  MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
     
 jobs:
     unit-testing:
@@ -36,3 +36,47 @@ jobs:
           with:
             name: Mocha-Test-Result
             path: test-results.xml
+
+    docker:
+      name: Containerization
+      needs: [unit-testing]
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Repo
+          uses: actions/checkout@v4
+  
+        - name: Dockerhub Login
+          uses: docker/login-action@v2.2.0
+          with:
+            username: ${{ vars.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_PASSWORD }}
+  
+        - name: GHCR Login
+          uses: docker/login-action@v2.2.0
+          with:
+            registry: 
+            username: 
+            password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        
+        - name: Docker Build For Testing
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: false
+            tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+
+        - name: Docker Image Testing
+          run: |
+            docker images
+            docker run --name solar-system-app -d \
+              -p 3000:3000 \
+              -e MONGO_URI=$MONGO_URI \
+              -e MONGO_USERNAME=$MONGO_USERNAME \
+              -e MONGO_PASSWORD=$MONGO_PASSWORD \
+              ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+  
+            export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
+            echo $IP
+  
+            echo Testing Image URL using wget
+            wget -q -O - 127.0.0.1:3000/live | grep live
