@@ -7,6 +7,9 @@ on:
 jobs:
   test-publish-package:
     runs-on: ubuntu-latest
+    permissions:
+        packages: write
+        contents: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -15,6 +18,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
+          registry-url: 'https://npm.pkg.github.com'
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Publish to Github Registry
+        run: npm publish
+        env:
+            NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
