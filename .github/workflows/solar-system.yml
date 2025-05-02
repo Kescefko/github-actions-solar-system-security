@@ -90,62 +90,80 @@ jobs:
             key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
 
-    # docker:
-    #   name: Containerization
-    #   needs: [unit-testing]
-    #   permissions:
-    #     packages: write
-    #   runs-on: ubuntu-latest
-    #   steps:
-    #     - name: Checkout Repo
-    #       uses: actions/checkout@v4
+    docker:
+      name: Containerization
+      needs: [unit-testing]
+      permissions:
+        packages: write
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Repo
+          uses: actions/checkout@v4
   
-    #     - name: Dockerhub Login
-    #       uses: docker/login-action@v2.2.0
-    #       with:
-    #         username: ${{ vars.DOCKERHUB_USERNAME }}
-    #         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        - name: Dockerhub Login
+          uses: docker/login-action@v2.2.0
+          with:
+            username: ${{ vars.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_PASSWORD }}
   
-    #     - name: GHCR Login
-    #       uses: docker/login-action@v2.2.0
-    #       with:
-    #         registry: ghcr.io
-    #         username: ${{ github.repository_owner }}
-    #         password: ${{ secrets.GITHUB_TOKEN }}
+        - name: GHCR Login
+          uses: docker/login-action@v2.2.0
+          with:
+            registry: ghcr.io
+            username: ${{ github.repository_owner }}
+            password: ${{ secrets.GITHUB_TOKEN }}
         
-    #     - name: Docker Build For Testing
-    #       uses: docker/build-push-action@v4
-    #       with:
-    #         context: .
-    #         push: false
-    #         tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+        - name: Docker Build For Testing
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: false
+            tags: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
 
-    #     - name: Docker Image Testing
-    #       run: |
-    #         docker images
-    #         docker run --name solar-system-app -d \
-    #           -p 3000:3000 \
-    #           -e MONGO_URI=$MONGO_URI \
-    #           -e MONGO_USERNAME=$MONGO_USERNAME \
-    #           -e MONGO_PASSWORD=$MONGO_PASSWORD \
-    #           ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+        - name: Docker Image Testing
+          run: |
+            docker images
+            docker run --name solar-system-app -d \
+              -p 3000:3000 \
+              -e MONGO_URI=$MONGO_URI \
+              -e MONGO_USERNAME=$MONGO_USERNAME \
+              -e MONGO_PASSWORD=$MONGO_PASSWORD \
+              ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
   
-    #         export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
-    #         echo $IP
+            export IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' solar-system-app)
+            echo $IP
   
-    #         echo Testing Image URL using wget
-    #         wget -q -O - 127.0.0.1:3000/live | grep live
+            echo Testing Image URL using wget
+            wget -q -O - 127.0.0.1:3000/live | grep live
 
-    #     - name: Set image name
-    #       run: |
-    #         IMAGE_NAME="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/solar-system:${{ github.sha }}"
-    #         echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+        - name: Set image name
+          run: |
+            IMAGE_NAME="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/solar-system:${{ github.sha }}"
+            echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-    #     - name: Container Registry Push
-    #       uses: docker/build-push-action@v4
-    #       with:
-    #         context: .
-    #         push: true
-    #         tags: |
-    #           ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-    #           ${{ env.IMAGE_NAME }}
+        - name: Container Registry Push
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            push: true
+            tags: |
+              ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+              ${{ env.IMAGE_NAME }}
+
+    dev-deploy:
+      needs: docker
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
+      
+        - name: Install kubectl cli
+          uses: azure/setup-kubectl@v3
+          with:
+            version: 'v1.26.0'
+        
+        - name: Fecth Kubernetes Cluster Details
+          run: |
+            kubectl version --short
+            echo -------------------------------
+            kubectl get nodes
