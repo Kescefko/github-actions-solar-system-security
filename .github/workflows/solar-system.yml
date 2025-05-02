@@ -47,47 +47,47 @@ jobs:
             name: Mocha-Test-Result
             path: test-results.xml
 
-    code-coverage:
-      name: Code Coverage
-      container:
-        image: node:18
-      services:
-          mongo-db:
-            image: siddharth67/mongo-db:non-prod
-            options:
-              --name mongo  
-            env:
-              MONGO_URI: 'mongodb://mongo:27017/superData'
-              MONGO_USERNAME: non-prod-user
-              MONGO_PASSWORD: non-prod-password
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
+    # code-coverage:
+    #   name: Code Coverage
+    #   container:
+    #     image: node:18
+    #   services:
+    #       mongo-db:
+    #         image: siddharth67/mongo-db:non-prod
+    #         options:
+    #           --name mongo  
+    #         env:
+    #           MONGO_URI: 'mongodb://mongo:27017/superData'
+    #           MONGO_USERNAME: non-prod-user
+    #           MONGO_PASSWORD: non-prod-password
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - name: Checkout Repository
+    #       uses: actions/checkout@v4
 
-        # - name: Setup NodeJS Version - 18
-        #   uses: actions/setup-node@v3
-        #   with:
-        #     node-version: 18
+    #     # - name: Setup NodeJS Version - 18
+    #     #   uses: actions/setup-node@v3
+    #     #   with:
+    #     #     node-version: 18
 
-        - name: Install Dependencies
-          run: npm install
+    #     - name: Install Dependencies
+    #       run: npm install
 
-        - name: Run Tests with Code Coverage
-          run: |
-            npx nyc --reporter=lcov --reporter=text npm test
+    #     - name: Run Tests with Code Coverage
+    #       run: |
+    #         npx nyc --reporter=lcov --reporter=text npm test
 
-        - name: Upload Code Coverage Report
-          uses: actions/upload-artifact@v4
-          with:
-            name: code-coverage-report
-            path: coverage/
+    #     - name: Upload Code Coverage Report
+    #       uses: actions/upload-artifact@v4
+    #       with:
+    #         name: code-coverage-report
+    #         path: coverage/
 
-        - name: Cache NPM dependencies
-          uses: actions/cache@v3
-          with:
-            path: node_modules
-            key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+    #     - name: Cache NPM dependencies
+    #       uses: actions/cache@v3
+    #       with:
+    #         path: node_modules
+    #         key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
 
 
     docker:
@@ -161,6 +161,11 @@ jobs:
           uses: azure/setup-kubectl@v3
           with:
             version: 'v1.26.0'
+
+        - uses: azure/k8s-set-context@v4
+          with:
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBECONFIG }}
         
         - name: Fecth Kubernetes Cluster Details
           run: |
