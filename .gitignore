@@ -6,3 +6,6 @@ coverage
 test-results.xml
 tls.key
 tls.crt
+
+./calico/*
+.github/workflows/calico/*
