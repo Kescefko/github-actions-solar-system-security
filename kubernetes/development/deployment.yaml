@@ -1,29 +1,60 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: astro-bot-ui-ui
+  namespace: astro-bot
   labels:
-    app: solar-system
-  name: solar-system
-  namespace: _{_NAMESPACE_}_
+    app: astro-bot-ui
 spec:
-  replicas: _{_REPLICAS_}_
+  replicas: 2
   selector:
     matchLabels:
-      app: solar-system
-  strategy: {}
+      app: astro-bot-ui
   template:
     metadata:
       labels:
-        app: solar-system
+        app: astro-bot-ui
     spec:
       containers:
-      - image: _{_IMAGE_}_
+      - name: astro-bot-ui
+        image: arjunbabuust/astro-bot-ui:latest
         imagePullPolicy: Always
-        name: solar-system
         ports:
         - containerPort: 3000
-          name: http
-          protocol: TCP
-        envFrom:
-        - secretRef:
-            name: mongo-db-creds
+        resources:
+          requests:
+            cpu: 100m   
+            memory: 100Mi  
+          limits:
+            cpu: 2000m  
+            memory: 512Mi  
+
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   labels:
+#     app: solar-system
+#   name: solar-system
+#   namespace: _{_NAMESPACE_}_
+# spec:
+#   replicas: _{_REPLICAS_}_
+#   selector:
+#     matchLabels:
+#       app: solar-system
+#   strategy: {}
+#   template:
+#     metadata:
+#       labels:
+#         app: solar-system
+#     spec:
+#       containers:
+#       - image: _{_IMAGE_}_
+#         imagePullPolicy: Always
+#         name: solar-system
+#         ports:
+#         - containerPort: 3000
+#           name: http
+#           protocol: TCP
+#         envFrom:
+#         - secretRef:
+#             name: mongo-db-creds
