@@ -9,3 +9,4 @@ tls.crt
 
 ./calico/*
 .github/workflows/calico/*
+calico/logging-traffic.yaml
