@@ -7,6 +7,7 @@ test-results.xml
 tls.key
 tls.crt
 
-./calico/*
-.github/workflows/calico/*
-calico/logging-traffic.yaml
+./calico/*.yaml
+
+./tls/prep_cert
+tls/prepcert.sh
