@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx-external
   rules:
-  - host: solar-system-test.westeurope.cloudapp.azure.com
+  - host: solar-system-prod.westeurope.cloudapp.azure.com
     http:
       paths:
       - path: /
@@ -21,5 +21,5 @@ spec:
               number: 3000
   tls:
   - hosts:
-    - solar-system-test.westeurope.cloudapp.azure.com
+    - solar-system-prod.westeurope.cloudapp.azure.com
     secretName: solar-system-ingress-tls-secret

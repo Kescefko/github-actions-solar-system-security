@@ -1,24 +1,25 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    kubernetes.io/tls-acme: "true"
   name: solar-system
   namespace: _{_NAMESPACE_}_
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 spec:
-    rules:
-    - host: solar-system-test.westeurope.cloudapp.azure.com
-      http:
-        paths:
-        - backend:
-            service:
-              name: solar-system
-              port:
-                number: 3000
-          path: /
-          pathType: Prefix
-    tls:
-    - hosts:
-      - solar-system-test.westeurope.cloudapp.azure.com
-      secretName: ingress-local-tls
+  ingressClassName: nginx-external
+  rules:
+  - host: solar-system-production.westeurope.cloudapp.azure.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: solar-system
+            port:
+              number: 3000
+  tls:
+  - hosts:
+    - solar-system-production.westeurope.cloudapp.azure.com
+    secretName: solar-system-ingress-tls-secret

@@ -209,7 +209,7 @@ jobs:
             echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
           
         
-    integration-testing:
+    dev-integration-testing:
       name: Dev Integration Testing
       needs: dev-deploy
       runs-on: ubuntu-latest
@@ -221,3 +221,86 @@ jobs:
             echo $URL
             echo "---------------------"
             curl https://$URL/live -s -k | jq -r .status | grep -i live
+
+    prod-deploy:
+      needs: dev-integration-testing
+      environment: 
+        name: production
+        url: https://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+      runs-on: ubuntu-latest
+      outputs:
+        APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v4
+  
+        - name: Install kubectl cli
+          uses: azure/setup-kubectl@v3
+          with:
+            version: 'v1.26.0'
+  
+        - uses: azure/k8s-set-context@v4
+          with:
+            method: kubeconfig
+            kubeconfig: ${{ secrets.KUBECONFIG }}
+  
+        - name: Fetch Kubernetes Cluster Details
+          run: |
+            kubectl version --short
+            echo -------------------------------
+            kubectl get nodes
+  
+        - name: Save Nginx Ingress Controller IP as GITHUB Environment Variable
+          run: |
+            echo "INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> "$GITHUB_ENV"
+  
+        - name: Replace Token in Manifest files
+          uses: cschleiden/replace-tokens@v1
+          with:
+            tokenPrefix: '_{_'
+            tokenSuffix: '_}_'
+            files: '["kubernetes/production/*.yaml"]'
+          env:
+            NAMESPACE: ${{ vars.NAMESPACE }}
+            REPLICAS: ${{ vars.REPLICAS }}
+            IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+            INGRESS_IP: ${{ env.INGRESS_IP }}
+  
+        - name: Check files
+          run: |
+            cat kubernetes/production/*.yaml
+  
+        - name: Create MongoDB Secret
+          run: |
+            kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+            --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
+            --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
+            --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
+            --save-config \
+            --dry-run=client \
+            -o yaml | kubectl apply -f -
+  
+        - name: Deploy to Prod Env
+          run: |
+            kubectl apply -f kubernetes/production
+  
+        - name: Set App Ingress Host URL
+          id: set-ingress-host-address
+          run: |
+            host=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath="{.items[0].spec.tls[0].hosts[0]}")
+            echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
+
+    prod-integration-testing:
+      name: Prod Integration Testing
+      needs: prod-deploy
+      runs-on: ubuntu-latest
+      steps:
+        - name: Test URL Output using CURL and JQ
+          env:
+            URL: ${{ needs.prod-deploy.outputs.APP_INGRESS_HOST }}
+          run: |
+            echo $URL
+            echo "---------------------"
+            curl https://$URL/live -s -k | jq -r .status | grep -i live
+          
+  
