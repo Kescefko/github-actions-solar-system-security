@@ -147,7 +147,7 @@ jobs:
       needs: docker
       environment: 
         name: development
-        url: https://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+        url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
       runs-on: ubuntu-latest
       outputs:
         APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
@@ -224,14 +224,14 @@ jobs:
           run: |
             echo $URL
             echo "---------------------"
-            curl https://$URL/live -s -k | jq -r .status | grep -i live
+            curl http://$URL/live -s -k | jq -r .status | grep -i live
 
     prod-deploy:
       if: github.ref == 'refs/heads/main'
       needs: docker
       environment: 
         name: production
-        url: https://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+        url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
       runs-on: ubuntu-latest
       outputs:
         APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
@@ -307,6 +307,6 @@ jobs:
           run: |
             echo $URL
             echo "---------------------"
-            curl https://$URL/live -s -k | jq -r .status | grep -i live
+            curl http://$URL/live -s -k | jq -r .status | grep -i live
           
   
