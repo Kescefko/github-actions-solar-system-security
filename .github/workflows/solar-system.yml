@@ -224,10 +224,23 @@ jobs:
           with:
             version: 'v1.26.0'
   
-        - uses: azure/k8s-set-context@v4
+        # AKS context in Azure
+        # - uses: azure/k8s-set-context@v4
+        #   with:
+        #     method: kubeconfig
+        #     kubeconfig: ${{ secrets.KUBECONFIG }}
+
+        # GKE context in GCP
+        # Setup gcloud CLI
+        - id: 'auth'
+          uses: 'google-github-actions/auth@v0'
           with:
-            method: kubeconfig
-            kubeconfig: ${{ secrets.KUBECONFIG }}
+            credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+        - name: Authenticate GKE and Set kubeconfig
+          run: |
+            gcloud auth activate-service-account --key-file=${{ secrets.GCP_SA_KEY }}
+            gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_CLUSTER_REGION }}
   
         - name: Fetch Kubernetes Cluster Details
           run: |
