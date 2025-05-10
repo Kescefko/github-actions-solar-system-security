@@ -142,8 +142,9 @@ jobs:
 
         - name: Install gke-gcloud-auth-plugin
           run: |
-            sudo apt-get update
-            sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
+            curl -sSL https://dl.google.com/cloudsdk/channels/rapid/install_google_cloud_sdk.bash | bash
+            source $HOME/google-cloud-sdk/path.bash.inc
+            gcloud components install gke-gcloud-auth-plugin
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
@@ -243,8 +244,9 @@ jobs:
 
         - name: Install gke-gcloud-auth-plugin
           run: |
-            sudo apt-get update
-            sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
+            curl -sSL https://dl.google.com/cloudsdk/channels/rapid/install_google_cloud_sdk.bash | bash
+            source $HOME/google-cloud-sdk/path.bash.inc
+            gcloud components install gke-gcloud-auth-plugin
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
