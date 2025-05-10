@@ -1,15 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: solar-system
+  name: solar-system-ingress
   namespace: _{_NAMESPACE_}_
   annotations:
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx-external
+  # ingressClassName: "gce" # Optional: Explicitly specify the GCE Ingress controller
   rules:
-  - host: solar-system-test.westeurope.cloudapp.azure.com
+  - host: gke-poc-nginx-development.local # Replace with your desired domain (or the GKE provided one)
     http:
       paths:
       - path: /
@@ -19,7 +18,7 @@ spec:
             name: solar-system
             port:
               number: 3000
-  tls:
-  - hosts:
-    - solar-system-test.westeurope.cloudapp.azure.com
-    secretName: solar-system-ingress-tls-secret
+  # tls:
+  # - hosts:
+  #   - prod-gke-poc.local # Replace with your desired domain (or the GKE provided one)
+  #   secretName: solar-system-tls-secret # Your TLS secret name
