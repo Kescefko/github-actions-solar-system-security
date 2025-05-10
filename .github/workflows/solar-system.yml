@@ -142,9 +142,7 @@ jobs:
 
         - name: Install gke-gcloud-auth-plugin
           run: |
-            curl -sSL https://dl.google.com/cloudsdk/channels/rapid/install_google_cloud_sdk.bash | bash
-            source $HOME/google-cloud-sdk/path.bash.inc
-            gcloud components install gke-gcloud-auth-plugin
+            gcloud components install gke-gcloud-auth-plugin --quiet
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
@@ -244,9 +242,7 @@ jobs:
 
         - name: Install gke-gcloud-auth-plugin
           run: |
-            curl -sSL https://dl.google.com/cloudsdk/channels/rapid/install_google_cloud_sdk.bash | bash
-            source $HOME/google-cloud-sdk/path.bash.inc
-            gcloud components install gke-gcloud-auth-plugin
+            gcloud components install gke-gcloud-auth-plugin --quiet
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
