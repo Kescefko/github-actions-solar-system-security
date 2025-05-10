@@ -234,14 +234,19 @@ jobs:
         #     kubeconfig: ${{ secrets.KUBECONFIG }}
 
         # GKE context in GCP
-        - name: install the gcloud cli
-          uses: google-github-actions/setup-gcloud@v0
+        - name: Set up Kubernetes configuration
+          run: |
+            mkdir -p ~/.kube
+            echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+            chmod 600 ~/.kube/config
+          env:
+            KUBECONFIG: ${{ secrets.KUBECONFIG }}
+
+        - name: Authenticate to GKE
+          uses: google-github-actions/auth@v2
           with:
-            project_id: stone-column-459311-v2
-            service_account_key: ${{ secrets.GCP_SA_KEY }}
-            install_components: 'gke-gcloud-auth-plugin'
-            export_default_credentials: true
-  
+            credentials_json: ${{ secrets.GCP_SA_KEY }}
+
         - name: Fetch Kubernetes Cluster Details
           run: |
             kubectl version --short
