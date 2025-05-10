@@ -49,39 +49,6 @@ jobs:
             name: Mocha-Test-Result
             path: test-results.xml
 
-    # code-coverage:
-    #   name: Code Coverage
-    #   container:
-    #     image: node:18
-    #   services:
-    #       mongo-db:
-    #         image: siddharth67/mongo-db:non-prod
-    #         options:
-    #           --name mongo  
-    #         env:
-    #           MONGO_URI: 'mongodb://mongo:27017/superData'
-    #           MONGO_USERNAME: non-prod-user
-    #           MONGO_PASSWORD: non-prod-password
-    #   runs-on: ubuntu-latest
-    #   steps:
-    #     - name: Checkout Repository
-    #       uses: actions/checkout@v4
-
-    #     # - name: Setup NodeJS Version - 18
-    #     #   uses: actions/setup-node@v3
-    #     #   with:
-    #     #     node-version: 18
-
-    #     - name: Install Dependencies
-    #       run: npm install
-    #
-    #     - name: Cache NPM dependencies
-    #       uses: actions/cache@v3
-    #       with:
-    #         path: node_modules
-    #         key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-
-
     docker:
       name: Containerization
       needs: [unit-testing]
@@ -159,11 +126,24 @@ jobs:
           uses: azure/setup-kubectl@v3
           with:
             version: 'v1.26.0'
+        
+        # AKS context in Azure
+        # - uses: azure/k8s-set-context@v4
+        #   with:
+        #     method: kubeconfig
+        #     kubeconfig: ${{ secrets.KUBECONFIG }}
 
-        - uses: azure/k8s-set-context@v4
+        # GKE context in GCP
+        # Setup gcloud CLI
+        - id: 'auth'
+          uses: 'google-github-actions/auth@v0'
           with:
-            method: kubeconfig
-            kubeconfig: ${{ secrets.KUBECONFIG }}
+            credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+        - name: Authenticate GKE and Set kubeconfig
+          run: |
+            gcloud auth activate-service-account --key-file=${{ secrets.GCP_SA_KEY }}
+            gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_CLUSTER_REGION }}
         
         - name: Fetch Kubernetes Cluster Details
           run: |
