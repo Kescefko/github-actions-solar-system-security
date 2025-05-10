@@ -142,7 +142,6 @@ jobs:
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
-            gcloud auth activate-service-account --key-file=${{ secrets.GCP_SA_KEY }}
             gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_CLUSTER_REGION }}
         
         - name: Fetch Kubernetes Cluster Details
@@ -239,7 +238,6 @@ jobs:
 
         - name: Authenticate GKE and Set kubeconfig
           run: |
-            gcloud auth activate-service-account --key-file=${{ secrets.GCP_SA_KEY }}
             gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_CLUSTER_REGION }}
   
         - name: Fetch Kubernetes Cluster Details
