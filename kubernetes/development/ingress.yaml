@@ -6,9 +6,8 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  # ingressClassName: "gce" # Optional: Explicitly specify the GCE Ingress controller
   rules:
-  - host: gke-poc-nginx-development.local # Replace with your desired domain (or the GKE provided one)
+  - host: gke-poc-nginx-development.local
     http:
       paths:
       - path: /
@@ -18,7 +17,8 @@ spec:
             name: solar-system
             port:
               number: 3000
+  # Uncomment to enable HTTPS
   # tls:
   # - hosts:
-  #   - prod-gke-poc.local # Replace with your desired domain (or the GKE provided one)
-  #   secretName: solar-system-tls-secret # Your TLS secret name
+  #   - gke-poc-nginx-development.local
+  #   secretName: solar-system-tls-secret

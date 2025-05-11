@@ -10,6 +10,7 @@ spec:
   - port: 3000
     protocol: TCP
     targetPort: 3000
+    name: http
   selector:
     app: solar-system 
   type: NodePort

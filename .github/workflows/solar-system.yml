@@ -233,19 +233,15 @@ jobs:
         #     method: kubeconfig
         #     kubeconfig: ${{ secrets.KUBECONFIG }}
 
-        # GKE context in GCP
-        - name: Set up Kubernetes configuration
-          run: |
-            mkdir -p ~/.kube
-            echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-            chmod 600 ~/.kube/config
-          env:
-            KUBECONFIG: ${{ secrets.KUBECONFIG }}
-
-        - name: Authenticate to GKE
-          uses: google-github-actions/auth@v2
+        - name: Set up Google Cloud CLI
+          uses: google-github-actions/setup-gcloud@v2
           with:
-            credentials_json: ${{ secrets.GCP_SA_KEY }}
+            service_account_key: ${{ secrets.GCP_SA_KEY }} # Replace with your secret name
+            project_id: ${{ secrets.GCP_PROJECT_ID }}     # Replace with your secret name
+
+        - name: Install gke-gcloud-auth-plugin
+          run: |
+            gcloud components install gke-gcloud-auth-plugin
 
         - name: Fetch Kubernetes Cluster Details
           run: |
