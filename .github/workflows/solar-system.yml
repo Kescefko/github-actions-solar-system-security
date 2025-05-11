@@ -13,6 +13,14 @@ env:
   MONGO_URI: 'mongodb+srv://supercluster.d83jj.mongodb.net/superData'
   MONGO_USERNAME: 'superuser'
   MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+
+  # GCP
+  PROJECT_ID: stone-column-459311-v2
+  PROJECT_NUMBER: 48311044267
+  CLUSTER: clouddemo-linux
+  CLUSTER_ZONE: us-central1-a
+  REPOSITORY: clouddemo
+  REPOSITORY_REGION: us-central1
     
 jobs:
     unit-testing:
@@ -112,6 +120,9 @@ jobs:
     dev-deploy:
       if: contains(github.ref, 'feature/')
       needs: docker
+      permissions:
+        id-token: write
+        contents: read
       environment: 
         name: development
         url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
@@ -126,28 +137,23 @@ jobs:
           uses: azure/setup-kubectl@v3
           with:
             version: 'v1.26.0'
-        
-        # AKS context in Azure
-        # - uses: azure/k8s-set-context@v4
-        #   with:
-        #     method: kubeconfig
-        #     kubeconfig: ${{ secrets.KUBECONFIG }}
 
         # GKE context in GCP
-        # Setup gcloud CLI
         - id: 'auth'
-          uses: 'google-github-actions/auth@v1'
+          name: 'Obtain access token by using workload identity federation'
+          uses: 'google-github-actions/auth@v0'
           with:
-            credentials_json: '${{ secrets.GCP_SA_KEY }}'
+            create_credentials_file: true
+            token_format: access_token
+            workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+            service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
-        - name: Install gke-gcloud-auth-plugin
-          run: |
-            gcloud components install gke-gcloud-auth-plugin --quiet
-
-        - name: Authenticate GKE and Set kubeconfig
-          run: |
-            gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --region ${{ secrets.GKE_CLUSTER_REGION }}
-        
+        - name: Connect to GKE
+          uses: google-github-actions/get-gke-credentials@v0
+          with:
+            cluster_name: ${{ env.CLUSTER }}
+            location: ${{ env.CLUSTER_ZONE }}
+            
         - name: Fetch Kubernetes Cluster Details
           run: |
             kubectl version --short
@@ -227,21 +233,21 @@ jobs:
           with:
             version: 'v1.26.0'
   
-        # AKS context in Azure
-        # - uses: azure/k8s-set-context@v4
-        #   with:
-        #     method: kubeconfig
-        #     kubeconfig: ${{ secrets.KUBECONFIG }}
-
-        - name: Set up Google Cloud CLI
-          uses: google-github-actions/setup-gcloud@v2
+         # GKE context in GCP
+        - id: 'auth'
+          name: 'Obtain access token by using workload identity federation'
+          uses: 'google-github-actions/auth@v0'
           with:
-            service_account_key: ${{ secrets.GCP_SA_KEY }} # Replace with your secret name
-            project_id: ${{ secrets.GCP_PROJECT_ID }}     # Replace with your secret name
-
-        - name: Install gke-gcloud-auth-plugin
-          run: |
-            gcloud components install gke-gcloud-auth-plugin
+            create_credentials_file: true
+            token_format: access_token
+            workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+            service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+            
+        - name: Connect to GKE
+          uses: google-github-actions/get-gke-credentials@v0
+          with:
+            cluster_name: ${{ env.CLUSTER }}
+            location: ${{ env.CLUSTER_ZONE }}
 
         - name: Fetch Kubernetes Cluster Details
           run: |
