@@ -117,196 +117,196 @@ jobs:
               ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
               ${{ env.IMAGE_NAME }}
 
-    dev-deploy:
-      if: contains(github.ref, 'feature/')
-      needs: docker
-      permissions:
-        id-token: write
-        contents: read
-      environment: 
-        name: development
-        url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
-      runs-on: ubuntu-latest
-      outputs:
-        APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
+    # dev-deploy:
+    #   if: contains(github.ref, 'feature/')
+    #   needs: docker
+    #   permissions:
+    #     id-token: write
+    #     contents: read
+    #   environment: 
+    #     name: development
+    #     url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+    #   runs-on: ubuntu-latest
+    #   outputs:
+    #     APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+    #   steps:
+    #     - name: Checkout Repository
+    #       uses: actions/checkout@v4
       
-        - name: Install kubectl cli
-          uses: azure/setup-kubectl@v3
-          with:
-            version: 'v1.26.0'
+    #     - name: Install kubectl cli
+    #       uses: azure/setup-kubectl@v3
+    #       with:
+    #         version: 'v1.26.0'
 
-        # GKE context in GCP
-        - id: 'auth'
-          name: 'Obtain access token by using workload identity federation'
-          uses: 'google-github-actions/auth@v0'
-          with:
-            create_credentials_file: true
-            token_format: access_token
-            workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
-            service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+    #     # GKE context in GCP
+    #     - id: 'auth'
+    #       name: 'Obtain access token by using workload identity federation'
+    #       uses: 'google-github-actions/auth@v0'
+    #       with:
+    #         create_credentials_file: true
+    #         token_format: access_token
+    #         workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+    #         service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
-        - name: Connect to GKE
-          uses: google-github-actions/get-gke-credentials@v0
-          with:
-            cluster_name: ${{ env.CLUSTER }}
-            location: ${{ env.CLUSTER_ZONE }}
+    #     - name: Connect to GKE
+    #       uses: google-github-actions/get-gke-credentials@v0
+    #       with:
+    #         cluster_name: ${{ env.CLUSTER }}
+    #         location: ${{ env.CLUSTER_ZONE }}
             
-        - name: Fetch Kubernetes Cluster Details
-          run: |
-            kubectl version --short
-            echo -------------------------------
-            kubectl get nodes
+    #     - name: Fetch Kubernetes Cluster Details
+    #       run: |
+    #         kubectl version --short
+    #         echo -------------------------------
+    #         kubectl get nodes
 
-        - name: Save Nginx Ingress Controller IP as  GITHUB Environment Variable
-          run: |
-            echo "INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> "$GITHUB_ENV"
+    #     - name: Save Nginx Ingress Controller IP as  GITHUB Environment Variable
+    #       run: |
+    #         echo "INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> "$GITHUB_ENV"
 
-        - name: Replace Token in Manifest files
-          uses: cschleiden/replace-tokens@v1
-          with:
-            tokenPrefix: '_{_'
-            tokenSuffix: '_}_'
-            files: '["kubernetes/development/*.yaml"]'
-          env:
-            NAMESPACE: ${{ vars.NAMESPACE }}
-            REPLICAS: ${{ vars.REPLICAS }}
-            IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-            INGRESS_IP: ${{ env.INGRESS_IP }}
+    #     - name: Replace Token in Manifest files
+    #       uses: cschleiden/replace-tokens@v1
+    #       with:
+    #         tokenPrefix: '_{_'
+    #         tokenSuffix: '_}_'
+    #         files: '["kubernetes/development/*.yaml"]'
+    #       env:
+    #         NAMESPACE: ${{ vars.NAMESPACE }}
+    #         REPLICAS: ${{ vars.REPLICAS }}
+    #         IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+    #         INGRESS_IP: ${{ env.INGRESS_IP }}
 
-        - name: Check files
-          run: |
-            cat kubernetes/development/*.yaml
+    #     - name: Check files
+    #       run: |
+    #         cat kubernetes/development/*.yaml
         
-        - name: Create MongoDB Secret
-          run: |
-            kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-            --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
-            --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
-            --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
-            --save-config \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
+    #     - name: Create MongoDB Secret
+    #       run: |
+    #         kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+    #         --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
+    #         --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
+    #         --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
+    #         --save-config \
+    #         --dry-run=client \
+    #         -o yaml | kubectl apply -f -
 
-        - name: Deploy to Dev Env
-          run: |
-            kubectl apply -f kubernetes/development
+    #     - name: Deploy to Dev Env
+    #       run: |
+    #         kubectl apply -f kubernetes/development
 
-        - name: Set App Ingress Host URL
-          id: set-ingress-host-address
-          run: |
-            host=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath="{.items[0].spec.tls[0].hosts[0]}")
-            echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
+    #     - name: Set App Ingress Host URL
+    #       id: set-ingress-host-address
+    #       run: |
+    #         host=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath="{.items[0].spec.tls[0].hosts[0]}")
+    #         echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
           
         
-    dev-integration-testing:
-      if: contains(github.ref, 'feature/')
-      name: Dev Integration Testing
-      needs: dev-deploy
-      runs-on: ubuntu-latest
-      steps:
-        - name: Test URL Output using CURL and JQ
-          env:
-            URL: ${{ needs.dev-deploy.outputs.APP_INGRESS_HOST }}
-          run: |
-            echo $URL
-            echo "---------------------"
-            curl http://$URL/live -s -k | jq -r .status | grep -i live
+    # dev-integration-testing:
+    #   if: contains(github.ref, 'feature/')
+    #   name: Dev Integration Testing
+    #   needs: dev-deploy
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - name: Test URL Output using CURL and JQ
+    #       env:
+    #         URL: ${{ needs.dev-deploy.outputs.APP_INGRESS_HOST }}
+    #       run: |
+    #         echo $URL
+    #         echo "---------------------"
+    #         curl http://$URL/live -s -k | jq -r .status | grep -i live
 
-    prod-deploy:
-      if: github.ref == 'refs/heads/main'
-      needs: docker
-      environment: 
-        name: production
-        url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
-      runs-on: ubuntu-latest
-      outputs:
-        APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
-      steps:
-        - name: Checkout Repository
-          uses: actions/checkout@v4
+    # prod-deploy:
+    #   if: github.ref == 'refs/heads/main'
+    #   needs: docker
+    #   environment: 
+    #     name: production
+    #     url: http://${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+    #   runs-on: ubuntu-latest
+    #   outputs:
+    #     APP_INGRESS_HOST: ${{ steps.set-ingress-host-address.outputs.APP_INGRESS_HOST }}
+    #   steps:
+    #     - name: Checkout Repository
+    #       uses: actions/checkout@v4
   
-        - name: Install kubectl cli
-          uses: azure/setup-kubectl@v3
-          with:
-            version: 'v1.26.0'
+    #     - name: Install kubectl cli
+    #       uses: azure/setup-kubectl@v3
+    #       with:
+    #         version: 'v1.26.0'
   
-         # GKE context in GCP
-        - id: 'auth'
-          name: 'Obtain access token by using workload identity federation'
-          uses: 'google-github-actions/auth@v0'
-          with:
-            create_credentials_file: true
-            token_format: access_token
-            workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
-            service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+    #      # GKE context in GCP
+    #     - id: 'auth'
+    #       name: 'Obtain access token by using workload identity federation'
+    #       uses: 'google-github-actions/auth@v0'
+    #       with:
+    #         create_credentials_file: true
+    #         token_format: access_token
+    #         workload_identity_provider: projects/${{ env.PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-oidc
+    #         service_account: github-actions-workflow@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
             
-        - name: Connect to GKE
-          uses: google-github-actions/get-gke-credentials@v0
-          with:
-            cluster_name: ${{ env.CLUSTER }}
-            location: ${{ env.CLUSTER_ZONE }}
+    #     - name: Connect to GKE
+    #       uses: google-github-actions/get-gke-credentials@v0
+    #       with:
+    #         cluster_name: ${{ env.CLUSTER }}
+    #         location: ${{ env.CLUSTER_ZONE }}
 
-        - name: Fetch Kubernetes Cluster Details
-          run: |
-            kubectl version --short
-            echo -------------------------------
-            kubectl get nodes
+    #     - name: Fetch Kubernetes Cluster Details
+    #       run: |
+    #         kubectl version --short
+    #         echo -------------------------------
+    #         kubectl get nodes
   
-        - name: Save Nginx Ingress Controller IP as GITHUB Environment Variable
-          run: |
-            echo "INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> "$GITHUB_ENV"
+    #     - name: Save Nginx Ingress Controller IP as GITHUB Environment Variable
+    #       run: |
+    #         echo "INGRESS_IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath="{.status.loadBalancer.ingress[0].ip}")" >> "$GITHUB_ENV"
   
-        - name: Replace Token in Manifest files
-          uses: cschleiden/replace-tokens@v1
-          with:
-            tokenPrefix: '_{_'
-            tokenSuffix: '_}_'
-            files: '["kubernetes/production/*.yaml"]'
-          env:
-            NAMESPACE: ${{ vars.NAMESPACE }}
-            REPLICAS: ${{ vars.REPLICAS }}
-            IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
-            INGRESS_IP: ${{ env.INGRESS_IP }}
+    #     - name: Replace Token in Manifest files
+    #       uses: cschleiden/replace-tokens@v1
+    #       with:
+    #         tokenPrefix: '_{_'
+    #         tokenSuffix: '_}_'
+    #         files: '["kubernetes/production/*.yaml"]'
+    #       env:
+    #         NAMESPACE: ${{ vars.NAMESPACE }}
+    #         REPLICAS: ${{ vars.REPLICAS }}
+    #         IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
+    #         INGRESS_IP: ${{ env.INGRESS_IP }}
   
-        - name: Check files
-          run: |
-            cat kubernetes/production/*.yaml
+    #     - name: Check files
+    #       run: |
+    #         cat kubernetes/production/*.yaml
   
-        - name: Create MongoDB Secret
-          run: |
-            kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
-            --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
-            --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
-            --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
-            --save-config \
-            --dry-run=client \
-            -o yaml | kubectl apply -f -
+    #     - name: Create MongoDB Secret
+    #       run: |
+    #         kubectl -n ${{ vars.NAMESPACE }} create secret generic mongo-db-creds \
+    #         --from-literal=MONGO_URI=${{ env.MONGO_URI }} \
+    #         --from-literal=MONGO_USERNAME=${{ env.MONGO_USERNAME }} \
+    #         --from-literal=MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }} \
+    #         --save-config \
+    #         --dry-run=client \
+    #         -o yaml | kubectl apply -f -
   
-        - name: Deploy to Prod Env
-          run: |
-            kubectl apply -f kubernetes/production
+    #     - name: Deploy to Prod Env
+    #       run: |
+    #         kubectl apply -f kubernetes/production
   
-        - name: Set App Ingress Host URL
-          id: set-ingress-host-address
-          run: |
-            host=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath="{.items[0].spec.tls[0].hosts[0]}")
-            echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
+    #     - name: Set App Ingress Host URL
+    #       id: set-ingress-host-address
+    #       run: |
+    #         host=$(kubectl -n ${{ vars.NAMESPACE }} get ingress -o jsonpath="{.items[0].spec.tls[0].hosts[0]}")
+    #         echo "APP_INGRESS_HOST=$host" >> "$GITHUB_OUTPUT"
 
-    prod-integration-testing:
-      if: github.ref == 'refs/heads/main'
-      name: Prod Integration Testing
-      needs: prod-deploy
-      runs-on: ubuntu-latest
-      steps:
-        - name: Test URL Output using CURL and JQ
-          env:
-            URL: ${{ needs.prod-deploy.outputs.APP_INGRESS_HOST }}
-          run: |
-            echo $URL
-            echo "---------------------"
-            curl http://$URL/live -s -k | jq -r .status | grep -i live
+    # prod-integration-testing:
+    #   if: github.ref == 'refs/heads/main'
+    #   name: Prod Integration Testing
+    #   needs: prod-deploy
+    #   runs-on: ubuntu-latest
+    #   steps:
+    #     - name: Test URL Output using CURL and JQ
+    #       env:
+    #         URL: ${{ needs.prod-deploy.outputs.APP_INGRESS_HOST }}
+    #       run: |
+    #         echo $URL
+    #         echo "---------------------"
+    #         curl http://$URL/live -s -k | jq -r .status | grep -i live
           
   
