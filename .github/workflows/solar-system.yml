@@ -116,21 +116,4 @@ jobs:
             tags: |
               ${{ vars.DOCKERHUB_USERNAME }}/solar-system:${{ github.sha }}
               ${{ env.IMAGE_NAME }}
-
-        - name: Set up Google Cloud SDK
-          uses: google-github-actions/setup-gcloud@v0.2.0
-          with:
-            version: 'latest'
-
-        - name: Authenticate to Google Cloud
-          env:
-            GCP_CREDENTIALS_JSON: ${{ secrets.GCP_CREDENTIALS_JSON }}
-          run: echo "$GCP_CREDENTIALS_JSON" > "$HOME/gcloud-key.json" && gcloud auth activate-service-account --key-file="$HOME/gcloud-key.json"
-
-        - name: Upload Coverage Report to GCS
-          run: |
-            # Assuming the coverage report is generated at 'coverage/coverage-final.json'
-            gsutil cp coverage/coverage-final.json gs://${{ secrets.GCS_BUCKET_NAME }}/reports/coverage-final.json
-
-          
   
