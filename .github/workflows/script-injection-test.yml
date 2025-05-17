@@ -18,3 +18,4 @@ jobs:
             echo "Assigning Label - BUG .... .. .... .. .... .."
           else
             echo "Not a bug"
+          fi
