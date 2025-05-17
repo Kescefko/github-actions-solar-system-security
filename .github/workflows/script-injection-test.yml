@@ -11,8 +11,8 @@ jobs:
       - name: "Add a Label"
         env:
           MONGO_PASSWORD: "${{ secrets.MONGO_PASSWORD }}"
+          issue_title: "${{ github.event.issue.title }}"
         run: |
-          issue_title="${{ github.event.issue.title }}"
           if [[ "$issue_title" == *"bug"* ]]; then
             echo "Issue is about a bug!"
             echo "Assigning Label - BUG .... .. .... .. .... .."
