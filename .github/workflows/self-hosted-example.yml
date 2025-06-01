@@ -5,7 +5,13 @@ on:
 
 jobs:
     testing:
-        runs-on: ubuntu-latest
+        runs-on: [
+            self-hosted,
+            Linux,
+            X64,
+            dev,
+            vm
+        ]
         steps:
             - name: Echo Content
               run: |
